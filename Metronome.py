@@ -3,6 +3,7 @@
 import os
 import sys
 import struct
+import getopt
 
 empty_sound = struct.pack('bbbbbbbb', *( 4,0,0,0,6,0,6,0 ))
 
@@ -33,23 +34,73 @@ class WavHeader(object):
                                              self.sub_chunk2_sz )
 
 ONE_SEC = 88200
+
 def bytes_for_beat(bpm):
     ratio = bpm/60.0
     bytes_per_beep = ONE_SEC / ratio
     return int(bytes_per_beep)
 
+def make_section(fh, sample_hdr, tempo, dura, sample_data):
+    tot_beats = dura * (tempo/60.0);
+    bps = bytes_for_beat(tempo);
+    tot_bytes = 0;
+    for i in range( int(tot_beats)):
+        fh.write( sample_data )
+        tot_bytes += sample_hdr.sub_chunk2_sz;
+        for j in range( (bps - sample_hdr.sub_chunk2_sz)/8):
+            fh.write( empty_sound )
+            tot_bytes += len(empty_sound)
+    return tot_bytes
+
+def usage():
+    print '''\
+%s [Options]
+
+Options:
+  -h, --help                 Help screen
+  -s, --sample=FILENAME      Sample file name
+  -t, --tempo=INT            Beginning tempo
+      --tempo-step=INT       Step this BPM for the next tempo (default 4)
+
+  -d, --duration=INT         *Depricated or FUTURE*  Duration. 
+      --granual-dura=INT     Duration for granual step.  (default 10 sec)
+      --granual-steps=INT    How many granual steps to practice.  
+                              (default 1 time)
+'''
 
 def main():
-    sample_fname = sys.argv[1]
-    tempo = int(sys.argv[2])
-    if tempo < 40:
+    sample_fname = "s3.wav"
+    tempo = 999
+    dura = -1
+    tempo_step = 4
+    gra_dura = 10
+    gra_stepn  = 1
+
+    sa = "hs:t:d:"
+    la = ('help', 'sample=', 'tempo=', 'duration=', 'tempo-step=', 'granual-dura=', \
+              'granual-steps=' )
+    o,a = getopt.getopt(sys.argv[1:], sa, la)
+    if len(o) + len(a) == 0:
+        usage()
+        sys.exit(1)
+
+    for k,v in o:
+        if    k in ('-h', '--help'):      usage(); sys.exit(0)
+        elif  k in ('-s', '--sample'):    sample_fname = v.strip()
+        elif  k in ('-t', '--tempo='):    tempo = int(v)            
+        elif  k in ('-d', '--duration='): 
+            # Duration is meaningless.
+            dura =  int(v)
+            print >>sys.stderr, "Duration is depricated, or future fix."
+            sys.exit(0)
+        elif  k == '--tempo-step':  tempo_step = int(v)
+        elif  k == '--granual-dura':   gra_dura = int(v)
+        elif  k == '--granual-steps':  gra_stepn = int(v)
+
+    if tempo < 40 or tempo > 250:
         print >> sys.stderr, "Invalid tempo:    Make it between 40 - MAX"
         print >> sys.stderr, "   * longer the sample length, smaller the MAX"
         sys.exit(1)
-    dura = int(sys.argv[3])
-    if dura <= 0:
-        print >> sys.stderr, "Invalid duration:  Make it greater than 0"
-        sys.exit(2)
 
     # Reading sample header
     if sys.platform == 'win32':
@@ -65,15 +116,12 @@ def main():
         bdata = open("t.wav", "wb")
     else:
         bdata = open("t.wav", "w")
-    tot_beats = dura * (tempo/60.0);
-    bps = bytes_for_beat(tempo);
-    tot_bytes = 0;
-    for i in range( int(tot_beats)):
-        bdata.write( sample_data )
-        tot_bytes += sample_hdr.sub_chunk2_sz;
-        for j in range( (bps - sample_hdr.sub_chunk2_sz)/8):
-            bdata.write( empty_sound )
-            tot_bytes += len(empty_sound)
+    
+    tot_bytes = 0
+    for i in range(0, gra_stepn):
+        tot_bytes += make_section(bdata, sample_hdr, tempo, gra_dura, sample_data)
+        tempo += tempo_step
+
     bdata.close()
 
     # Overwrite new size, and Generate output wav file 'a.wav'
@@ -88,6 +136,7 @@ def main():
     else:
         outf.write( open('t.wav').read() )
     outf.close()
+    print "a.wav is made"
 
 
 if __name__ == '__main__':
