@@ -63,8 +63,8 @@ Options:
       --tempo-step=INT       Step this BPM for the next tempo (default 4)
 
   -d, --duration=INT         *Depricated or FUTURE*  Duration. 
-      --granual-dura=INT     Duration for granual step.  (default 10 sec)
-      --granual-steps=INT    How many granual steps to practice.  
+      --gradual-dura=INT     Duration for gradual step.  (default 10 sec)
+      --gradual-steps=INT    How many gradual steps to practice.  
                               (default 1 time)
 '''
 
@@ -77,8 +77,8 @@ def main():
     gra_stepn  = 1
 
     sa = "hs:t:d:"
-    la = ('help', 'sample=', 'tempo=', 'duration=', 'tempo-step=', 'granual-dura=', \
-              'granual-steps=' )
+    la = ('help', 'sample=', 'tempo=', 'duration=', 'tempo-step=', 'gradual-dura=', \
+              'gradual-steps=' )
     o,a = getopt.getopt(sys.argv[1:], sa, la)
     if len(o) + len(a) == 0:
         usage()
@@ -94,8 +94,8 @@ def main():
             print >>sys.stderr, "Duration is depricated, or future fix."
             sys.exit(0)
         elif  k == '--tempo-step':  tempo_step = int(v)
-        elif  k == '--granual-dura':   gra_dura = int(v)
-        elif  k == '--granual-steps':  gra_stepn = int(v)
+        elif  k == '--gradual-dura':   gra_dura = int(v)
+        elif  k == '--gradual-steps':  gra_stepn = int(v)
 
     if tempo < 40 or tempo > 250:
         print >> sys.stderr, "Invalid tempo:    Make it between 40 - MAX"
