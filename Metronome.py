@@ -87,8 +87,8 @@ def main():
     for k,v in o:
         if    k in ('-h', '--help'):      usage(); sys.exit(0)
         elif  k in ('-s', '--sample'):    sample_fname = v.strip()
-        elif  k in ('-t', '--tempo='):    tempo = int(v)            
-        elif  k in ('-d', '--duration='): 
+        elif  k in ('-t', '--tempo'):    tempo = int(v)            
+        elif  k in ('-d', '--duration'): 
             # Duration is meaningless.
             dura =  int(v)
             print >>sys.stderr, "Duration is depricated, or future fix."
@@ -98,7 +98,7 @@ def main():
         elif  k == '--gradual-steps':  gra_stepn = int(v)
 
     if tempo < 40 or tempo > 250:
-        print >> sys.stderr, "Invalid tempo:    Make it between 40 - MAX"
+        print >> sys.stderr, "Invalid tempo (%d):    Make it between 40 - MAX" % tempo
         print >> sys.stderr, "   * longer the sample length, smaller the MAX"
         sys.exit(1)
 
