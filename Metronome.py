@@ -6,6 +6,7 @@ import struct
 import getopt
 
 empty_sound = struct.pack('bbbbbbbb', *( 4,0,0,0,6,0,6,0 ))
+dryrun = False
 
 class WavHeader(object):
     def __init__(self, rawdata):
@@ -58,44 +59,48 @@ def usage():
 
 Options:
   -h, --help                 Help screen
+      --dryrun               Don't make wav, but print the action.
   -s, --sample=FILENAME      Sample file name
   -t, --tempo=INT            Beginning tempo
       --tempo-step=INT       Step this BPM for the next tempo (default 4)
 
-  -d, --duration=INT         *Depricated or FUTURE*  Duration. 
+  -d, --duration=INT         limit the total duration.  Global limiter.
       --gradual-dura=INT     Duration for gradual step.  (default 10 sec)
       --gradual-steps=INT    How many gradual steps to practice.  
                               (default 1 time)
+      --stay=BPM             Set the stay mode at this bpm. 
+                             stay length is 10 times of regular gradual-dura.
+
 '''
 
 def main():
+    global dryrun
     sample_fname = "s3.wav"
     tempo = 999
     dura = -1
     tempo_step = 4
     gra_dura = 10
     gra_stepn  = 1
+    stay_bpm = 999
 
     sa = "hs:t:d:"
-    la = ('help', 'sample=', 'tempo=', 'duration=', 'tempo-step=', 'gradual-dura=', \
-              'gradual-steps=' )
+    la = ('help', 'dryrun', 'sample=', 'tempo=', 'duration=', 'tempo-step=', 'gradual-dura=', \
+              'gradual-steps=', 'stay=' )
     o,a = getopt.getopt(sys.argv[1:], sa, la)
     if len(o) + len(a) == 0:
         usage()
         sys.exit(1)
 
     for k,v in o:
-        if    k in ('-h', '--help'):      usage(); sys.exit(0)
-        elif  k in ('-s', '--sample'):    sample_fname = v.strip()
-        elif  k in ('-t', '--tempo'):    tempo = int(v)            
-        elif  k in ('-d', '--duration'): 
-            # Duration is meaningless.
-            dura =  int(v)
-            print >>sys.stderr, "Duration is depricated, or future fix."
-            sys.exit(0)
-        elif  k == '--tempo-step':  tempo_step = int(v)
-        elif  k == '--gradual-dura':   gra_dura = int(v)
-        elif  k == '--gradual-steps':  gra_stepn = int(v)
+        if    k in ('-h', '--help')     : usage(); sys.exit(0)
+        elif  k in ('-s', '--sample')   : sample_fname = v.strip()
+        elif  k in ('-t', '--tempo')    : tempo = int(v)            
+        elif  k in ('-d', '--duration') : dura =  int(v)
+        elif  k == '--dryrun'           : dryrun = True
+        elif  k == '--tempo-step'       : tempo_step = int(v)
+        elif  k == '--gradual-dura'     : gra_dura = int(v)
+        elif  k == '--gradual-steps'    : gra_stepn = int(v)
+        elif  k == '--stay'             :  stay_bpm = int(v)
 
     if tempo < 40 or tempo > 250:
         print >> sys.stderr, "Invalid tempo (%d):    Make it between 40 - MAX" % tempo
@@ -118,11 +123,25 @@ def main():
         bdata = open("t.wav", "w")
     
     tot_bytes = 0
+    if dura == -1:
+        dura = gra_dura * gra_stepn
     for i in range(0, gra_stepn):
-        tot_bytes += make_section(bdata, sample_hdr, tempo, gra_dura, sample_data)
+        loop_dura = gra_dura
+        if tempo > stay_bpm:
+            loop_dura = gra_dura * 10
+
+        if dryrun:
+            print "will make section of (tempo=%d, dura=%d)" % (tempo, loop_dura)
+        else:
+            tot_bytes += make_section(bdata, sample_hdr, tempo, loop_dura, sample_data)
         tempo += tempo_step
+        dura -= loop_dura
+        if dura < 0:
+            break
 
     bdata.close()
+    if dryrun:
+        sys.exit(0)
 
     # Overwrite new size, and Generate output wav file 'a.wav'
     sample_hdr.sub_chunk2_sz = tot_bytes

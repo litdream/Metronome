@@ -1,3 +1,4 @@
 * Project Metronome
 * TODO support ticking 3 beats or 4 beats.
 ** Find a good beating wav
+pop.wav is not good, but let's use it.  Later replace this with something better.
