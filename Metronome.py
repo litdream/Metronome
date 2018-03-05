@@ -125,7 +125,7 @@ def main():
     tot_bytes = 0
     if dura == -1:
         dura = gra_dura * gra_stepn
-    for i in range(0, gra_stepn):
+    for i in range(0, dura):
         loop_dura = gra_dura
         if tempo > stay_bpm:
             loop_dura = gra_dura * 10
