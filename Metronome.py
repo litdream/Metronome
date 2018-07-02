@@ -61,15 +61,10 @@ Options:
   -h, --help                 Help screen
       --dryrun               Don't make wav, but print the action.
   -s, --sample=FILENAME      Sample file name
-  -t, --tempo=INT            Beginning tempo
-      --tempo-step=INT       Step this BPM for the next tempo (default 4)
+                             Default s3.wav
 
-  -d, --duration=INT         limit the total duration.  Global limiter.
-      --gradual-dura=INT     Duration for gradual step.  (default 10 sec)
-      --gradual-steps=INT    How many gradual steps to practice.  
-                              (default 1 time)
-      --stay=BPM             Set the stay mode at this bpm. 
-                             stay length is 10 times of regular gradual-dura.
+  -t, --tempo=INT            Metronome Tempo
+  -d, --duration=INT         Total Duration
 
 '''
 
@@ -78,14 +73,9 @@ def main():
     sample_fname = "s3.wav"
     tempo = 999
     dura = -1
-    tempo_step = 4
-    gra_dura = 10
-    gra_stepn  = 1
-    stay_bpm = 999
 
     sa = "hs:t:d:"
-    la = ('help', 'dryrun', 'sample=', 'tempo=', 'duration=', 'tempo-step=', 'gradual-dura=', \
-              'gradual-steps=', 'stay=' )
+    la = ('help', 'dryrun', 'sample=', 'tempo=', 'duration=', )
     o,a = getopt.getopt(sys.argv[1:], sa, la)
     if len(o) + len(a) == 0:
         usage()
@@ -97,10 +87,6 @@ def main():
         elif  k in ('-t', '--tempo')    : tempo = int(v)            
         elif  k in ('-d', '--duration') : dura =  int(v)
         elif  k == '--dryrun'           : dryrun = True
-        elif  k == '--tempo-step'       : tempo_step = int(v)
-        elif  k == '--gradual-dura'     : gra_dura = int(v)
-        elif  k == '--gradual-steps'    : gra_stepn = int(v)
-        elif  k == '--stay'             :  stay_bpm = int(v)
 
     if tempo < 40 or tempo > 250:
         print >> sys.stderr, "Invalid tempo (%d):    Make it between 40 - MAX" % tempo
@@ -124,20 +110,11 @@ def main():
     
     tot_bytes = 0
     if dura == -1:
-        dura = gra_dura * gra_stepn
-    for i in range(0, dura):
-        loop_dura = gra_dura
-        if tempo > stay_bpm:
-            loop_dura = gra_dura * 10
-
-        if dryrun:
-            print "will make section of (tempo=%d, dura=%d)" % (tempo, loop_dura)
-        else:
-            tot_bytes += make_section(bdata, sample_hdr, tempo, loop_dura, sample_data)
-        tempo += tempo_step
-        dura -= loop_dura
-        if dura < 0:
-            break
+        dura = 60
+    if dryrun:
+        print "will make section of (tempo=%d)" % (tempo)
+    else:
+        tot_bytes += make_section(bdata, sample_hdr, tempo, dura, sample_data)
 
     bdata.close()
     if dryrun:
@@ -156,7 +133,7 @@ def main():
         outf.write( open('t.wav').read() )
     outf.close()
     print "a.wav is made"
-
+    os.system("rm -f t.wav")
 
 if __name__ == '__main__':
     main()
