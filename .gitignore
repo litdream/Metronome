@@ -1,1 +1,6 @@
 a.wav
+.coverage
+*.wav
+*~
+__pycache__
+venv
