@@ -1,2 +1,3 @@
 pytest
 pytest-cov
+pydub       # https://github.com/jiaaro/pydub
